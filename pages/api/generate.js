@@ -29,14 +29,23 @@ export default async function (req, res) {
   try {
     const completion = await openai.createChatCompletion({
       model: "gpt-3.5-turbo-0301",
-      messages: [{role: "user", content: `what topics should I cover as a beginner salesperson of ${promptInput}`}],
+      messages: [{role: "user", content: `
+      Q:Topics to study as a beginner to C.
+      A: Basic structure of C programming,declaring programs,attributes,methods, functions,  Data Types, Operators , Operator Precedence
+      Q:Topics to study as a beginner to photography.
+      A:Learn to hold your camera properly,Understand the exposure triangle,Learn to adjust white balance, Learn to read the histogram,Perspective
+      Q: topics should I cover as a beginner to of ${promptInput}
+      A: `}],
       temperature: 0.6,
       max_tokens:512
     });
 
 
     // TODO: Aggregate your response properly here and then send
-      console.log(completion.data.choices[0].message)
+      console.log(completion.data.choices[0].message);
+      // call search api here 
+     let list= parseResponseforSearch(completion.data.choices[0].message.content)
+     callALMSearch(list[0]);
     res.status(200).json({ result: completion.data.choices[0].message.content });
   } catch(error) {
     // Consider adjusting the error handling logic for your use case
@@ -54,6 +63,35 @@ export default async function (req, res) {
   }
 }
 
-function generatePrompt(prompt) {
-  return `what topics should I cover as a beginner salesperson of ${prompt}`;
+function parseResponseforSearch(content){
+  // Parsing search result here 
+  let list=content.split(",")
+  return list;
 }
+
+function callALMSearch(searchItem){
+// call public search api here and get courses list
+fetch(`https://learningmanagerstage1.adobe.com/primeapi/v2/search?page[limit]=10&query=${searchItem}&autoCompleteMode=false&filter.loTypes=course&sort=relevance&filter.ignoreEnhancedLP=true&matchType=phrase_and_match&persistSearchHistory=true`, {
+  "headers": {
+    "accept": "application/vnd.api+json;charset=UTF-8",
+    "accept-language": "en-IN,en-GB;q=0.9,en;q=0.8,en-US;q=0.7",
+    "authorization": "oauth 4f911767a78ca9171d3b27e6c2aba47c",
+    "sec-ch-ua": "\"Chromium\";v=\"110\", \"Not A(Brand\";v=\"24\", \"Microsoft Edge\";v=\"110\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin"
+  },
+  "referrer": "https://learningmanagerstage1.adobe.com/docs/primeapi/v2/",
+  "referrerPolicy": "strict-origin-when-cross-origin",
+  "body": null,
+  "method": "GET",
+  "mode": "cors",
+  "credentials": "include"
+}).then(res=> res.json()).then((res)=>console.log(res));
+}
+
+// function generatePrompt(prompt) {
+//   return `what topics should I cover as a beginner salesperson of ${prompt}`;
+// }
