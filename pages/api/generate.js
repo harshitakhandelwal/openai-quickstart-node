@@ -1,4 +1,5 @@
-import { Configuration, OpenAIApi } from "openai";
+const { Configuration, OpenAIApi } = require("openai");
+const { toChatML, get_message } = require("gpt-to-chatgpt")
 
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
@@ -15,23 +16,28 @@ export default async function (req, res) {
     return;
   }
 
-  const animal = req.body.animal || '';
-  if (animal.trim().length === 0) {
+  const promptInput = req.body.prompt || '';
+  if (promptInput.trim().length === 0) {
     res.status(400).json({
       error: {
-        message: "Please enter a valid animal",
+        message: "Please enter a valid prompt text",
       }
     });
     return;
   }
 
   try {
-    const completion = await openai.createCompletion({
-      model: "text-davinci-003",
-      prompt: generatePrompt(animal),
+    const completion = await openai.createChatCompletion({
+      model: "gpt-3.5-turbo-0301",
+      messages: [{role: "user", content: `what topics should I cover as a beginner salesperson of ${promptInput}`}],
       temperature: 0.6,
+      max_tokens:512
     });
-    res.status(200).json({ result: completion.data.choices[0].text });
+
+
+    // TODO: Aggregate your response properly here and then send
+      console.log(completion.data.choices[0].message)
+    res.status(200).json({ result: completion.data.choices[0].message.content });
   } catch(error) {
     // Consider adjusting the error handling logic for your use case
     if (error.response) {
@@ -48,15 +54,6 @@ export default async function (req, res) {
   }
 }
 
-function generatePrompt(animal) {
-  const capitalizedAnimal =
-    animal[0].toUpperCase() + animal.slice(1).toLowerCase();
-  return `Suggest three names for an animal that is a superhero.
-
-Animal: Cat
-Names: Captain Sharpclaw, Agent Fluffball, The Incredible Feline
-Animal: Dog
-Names: Ruff the Protector, Wonder Canine, Sir Barks-a-Lot
-Animal: ${capitalizedAnimal}
-Names:`;
+function generatePrompt(prompt) {
+  return `what topics should I cover as a beginner salesperson of ${prompt}`;
 }
