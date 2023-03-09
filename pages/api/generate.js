@@ -6,6 +6,9 @@ const configuration = new Configuration({
 });
 const openai = new OpenAIApi(configuration);
 
+
+//I am looking for topics to cover as a beginners in aem assets -> feels like a good format for question
+//give me only 10 key topic names I should cover as a beginner learning aem assets?
 export default async function (req, res) {
   if (!configuration.apiKey) {
     res.status(500).json({
@@ -16,8 +19,10 @@ export default async function (req, res) {
     return;
   }
 
-  const promptInput = req.body.prompt || '';
-  if (promptInput.trim().length === 0) {
+  const promptInputProduct = req.body.promptProduct || '';
+  const promptInputRole = req.body.promptRole || '';
+  const promptInputLevel = req.body.promptLevel || '';
+  if (promptInputProduct.trim().length === 0) {
     res.status(400).json({
       error: {
         message: "Please enter a valid prompt text",
@@ -25,28 +30,30 @@ export default async function (req, res) {
     });
     return;
   }
-
+  //[{role: "system", content: "You are a helpful assistant which gives best suggestions for courses"}
   try {
     const completion = await openai.createChatCompletion({
       model: "gpt-3.5-turbo-0301",
-      messages: [{role: "user", content: `
-      Q:Topics to study as a beginner to C.
-      A: Basic structure of C programming,declaring programs,attributes,methods, functions,  Data Types, Operators , Operator Precedence
-      Q:Topics to study as a beginner to photography.
-      A:Learn to hold your camera properly,Understand the exposure triangle,Learn to adjust white balance, Learn to read the histogram,Perspective
-      Q: topics should I cover as a beginner to of ${promptInput}
-      A: `}],
-      temperature: 0.6,
+      messages: [{role: "user", content: `give me only 10 key topic names I should cover as a ${promptInputLevel} ${promptInputRole} in ${promptInputProduct}`}],
+      temperature: 0.2,
       max_tokens:512
-    });
+     });
 
 
     // TODO: Aggregate your response properly here and then send
       console.log(completion.data.choices[0].message);
       // call search api here 
-     let list= parseResponseforSearch(completion.data.choices[0].message.content)
+      let list= parseResponseforSearch(completion.data.choices[0].message.content)
      callALMSearch(list[0]);
-    res.status(200).json({ result: completion.data.choices[0].message.content });
+     let DefaultKeyWords= fecthWithDefaultKeyWords(completion.data.choices[0].message.content);
+     let parseData = fecthWithParseData(completion.data.choices[0].message.content);
+     let topics = completion.data.choices[0].message.content;
+     res.status(200).json({ result: topics });
+
+    //  Promise.all([DefaultKeyWords,parseData]).then((keywords) => {
+    //   console.log(keywords);
+    //   res.status(200).json({ result: keywords });
+    //  })
   } catch(error) {
     // Consider adjusting the error handling logic for your use case
     if (error.response) {
@@ -67,6 +74,31 @@ function parseResponseforSearch(content){
   // Parsing search result here 
   let list=content.split(",")
   return list;
+}
+
+async function fecthWithDefaultKeyWords(content) {
+  const defaultKeyWordResponse = await openai.createCompletion({
+    model: "text-davinci-003",
+    prompt: `Extract keywords from this text: ${content}`,
+    temperature: 0.2,
+    max_tokens: 60,
+    top_p: 0.2,
+    frequency_penalty: 0.8,
+    presence_penalty: 0.0,
+  });
+  return [`-----defaultKeyWordResponse----\n ${defaultKeyWordResponse.data.choices[0].text}`];
+}
+async function fecthWithParseData(content) {
+  const parseDataResponse = await openai.createCompletion({
+    model: "text-davinci-003",
+    prompt: `${content} | Course | Topic | Level |`,
+    temperature: 0.2,
+    max_tokens: 100,
+    top_p: 0.2,
+    frequency_penalty: 0,
+    presence_penalty: 0,
+  });
+  return [`\n-----parsedDataResponse----\n ${parseDataResponse.data.choices[0].text} `];
 }
 
 function callALMSearch(searchItem){

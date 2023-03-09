@@ -3,7 +3,9 @@ import { useState } from "react";
 import styles from "./index.module.css";
 
 export default function Home() {
-  const [promptInput, setPromptInput] = useState("");
+  const [promptInputProduct, setPromptInputProduct] = useState("");
+  const [promptInputRole, setPromptInputRole]= useState("");
+  const [promptInputLevel, setPromptInputLevel]= useState("");
   const [result, setResult] = useState();
 
   async function onSubmit(event) {
@@ -14,7 +16,7 @@ export default function Home() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ prompt: promptInput }),
+        body: JSON.stringify({ promptProduct: promptInputProduct, promptRole : promptInputRole, promptLevel : promptInputLevel }),
       });
 
       const data = await response.json();
@@ -23,7 +25,9 @@ export default function Home() {
       }
 
       setResult(data.result);
-      setPromptInput("");
+      setPromptInputProduct("");
+      setPromptInputRole("");
+      setPromptInputLevel("");
     } catch(error) {
       // Consider implementing your own error handling logic here
       console.error(error);
@@ -40,12 +44,29 @@ export default function Home() {
       <main className={styles.main}>
         <h3>ALM GPT POC</h3>
         <form onSubmit={onSubmit}>
+          <div>Which product do you want to create the Learning Path for: </div>
           <input
             type="text"
-            name="promptBox"
-            placeholder="Enter your subject here"
-            value={promptInput}
-            onChange={(e) => setPromptInput(e.target.value)}
+            name="promptBoxProduct"
+            placeholder="Enter your product here"
+            value={promptInputProduct}
+            onChange={(e) => setPromptInputProduct(e.target.value)}
+          />
+          <div>What role is this Learning Path intended for:  </div>
+          <input
+            type="text"
+            name="promptBoxRole"
+            placeholder="Enter role here"
+            value={promptInputRole}
+            onChange={(e) => setPromptInputRole(e.target.value)}
+          />
+          <div>What level of expertise is this Learning Path targeting?:  </div>
+          <input
+            type="text"
+            name="promptBoxRole"
+            placeholder="Enter level here"
+            value={promptInputLevel}
+            onChange={(e) => setPromptInputLevel(e.target.value)}
           />
           <input type="submit" value="Generate suggestions" />
         </form>
